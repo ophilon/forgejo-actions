@@ -6,6 +6,12 @@ jobs:
       run:
         working-directory: .
     steps:
+      - name: "export vars"
+        run: |
+         export PROBA_SECRET=${{ secrets.PROBA_SECRET }} PROBA_VAR=${{ vars.PROBA_VAR }}
+         echo "PROBA_SECRET = $PROBA_SECRET PROBA_VAR = $PROBA_VAR"
+         echo "GITHUB_SECRET=${PROBA_SECRET}" >> $GITHUB_ENV
+         echo "GITHUB_PROBA=${PROBA_VAR}" >> $GITHUB_ENV
       - name: "show env"
         run:
           env|sort
