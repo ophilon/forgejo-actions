@@ -1,7 +1,7 @@
 on: [push]
 jobs:
   demo:
-    runs-on: fc42dev
+    runs-on: ubuntu
     defaults:
       run:
         working-directory: .
