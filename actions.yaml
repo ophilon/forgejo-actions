@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: MIT
+name: 'Setup Forgejo'
+author: 'Forgejo authors'
+description: |
+  Setup Forgejo and a runner.
+
+  If `binary` is specified, Forgejo downloads the binary from the URL and uses
+  it to start an instance.
+
+  Otherwise, `image` and `image-version` must be specified and Forgejo
+  runs from the corresponding container image using docker.
+
+  The forgejo-test-helper.sh script is available to help test and debug actions.
+
+  `forgejo=http://root:admin1234@${{ steps.forgejo.outputs.host-port }}`
+
+  * `forgejo-test-helper.sh push_self_action $forgejo root myaction vTest`
+    Creates the repository `$forgejo/root/myaction` and populates it with the
+    content of the repository under test, except for the `.forgejo` directory
+    (it would otherwise create an infinite loop). The tag `vTest` is
+    set to the SHA under test.
+  * `forgejo-test-helper.sh run_workflow testrepo $forgejo root testrepo myaction`
+    Creates the repository `$forgejo/root/testrepo` and populates it with the
+    content of the `testrepo` directory. All occurrences of `SELF` in
+    `testrepo/.forgejo/workflows/*.yml` are replaced with `$forgejo/root/myaction`.
+  * `forgejo-test-helper.sh push testrepo $forgejo root testrepo`
+    Creates the repository `$forgejo/root/testrepo` and populates it with the
+    content of the `testrepo` directory.
+
+  The combination of `push_self_action` and `run_workflow` allows to
+  run Forgejo Actions workflows from `testrepo` that use the action
+  under test (`myaction`) to verify it works as intended.
+
+  The [forgejo-curl.sh](https://code.forgejo.org/forgejo/forgejo-curl#forgejo-curlsh)
+  script is logged in the instance and ready to be used with web or api endpoints.
+
+inputs:
+  image:
+    description: 'Container image'
+    default: 'code.forgejo.org/forgejo/forgejo'
+  image-version:
+    description: 'Container image version'
+    default: '7.0'
+  binary:
+    description: 'URL to a Forgejo binary'
+  user:
+    description: 'Administrator user name'
+    default: 'root'
+  password:
+    description: 'Administrator password'
+    default: 'admin1234'
+  runner:
+    description: 'Runner repository'
+    default: 'https://code.forgejo.org/forgejo/runner'
+  runner-version:
+    description: 'Runner version. If it starts with @ (for instance @featurebranch), the runner will be built from source using the specified branch.'
+    default: 'v6.3.1'
+  container:
+    description: 'Name of the container running the Forgejo instance'
+    default: 'forgejo'
+  lxc-ip-prefix:
+    description: 'Class C IP prefix used by LXC'
+    default: '10.0.23'
+  install-only:
+    description: 'Only install Forgejo and the Forgejo runner, do not launch them'
+    default: 'false'
+outputs:
+  url:
+    description: "URL of the Forgejo instance"
+    value: "${{ steps.forgejo.outputs.url }}"
+  host-port:
+    description: "Host and port of the Forgejo instance, e.g 172.0.17.2:3000"
+    value: "${{ steps.forgejo.outputs.host-port }}"
+  token:
+    description: "Administrator application token with all scopes"
+    value: "${{ steps.forgejo.outputs.token }}"
+  runner-logs:
+    description: "Filename of the Forgejo runner logs"
+    value: "${{ steps.forgejo.outputs.runner-logs }}"
+  runner-file:
+    description: "Path to the runner file"
+    value: "${{ steps.forgejo.outputs.runner-file }}"
+
+runs:
+  using: "composite"
+  steps:
+    - run: echo "${{ github.action_path }}" >> $GITHUB_PATH
+      shell: bash
+    - uses: actions/checkout@v4
+    - id: forgejo
+      run: |
+        cd $(mktemp -d)
+        cp ${{ github.action_path }}/runner-config.yaml .
+        LXC_IP_PREFIX=${{ inputs.lxc-ip-prefix }} forgejo-dependencies.sh
+        if ${{ inputs.install-only }} ; then
+          echo "install-only is true, do not run Forgejo"
+          exit 0
+        fi
+        if test "${{ inputs.binary }}"; then
+          forgejo-binary.sh ensure_user forgejo
+          chown forgejo $(pwd)
+          su -c "DIR=$(pwd) forgejo-binary.sh setup ${{ inputs.user }} ${{ inputs.password }} ${{ inputs.binary }}" forgejo
+          su -c "DIR=$(pwd) forgejo-runner.sh setup ${{ inputs.runner }} ${{ inputs.runner-version }} $(cat forgejo-url)" forgejo
+        else
+          export CONTAINER=${{ inputs.container }}
+          forgejo.sh setup ${{ inputs.user }} "${{ inputs.password }}" ${{ inputs.image }} ${{ inputs.image-version }}
+          forgejo-runner.sh setup ${{ inputs.runner }} ${{ inputs.runner-version }} $(cat forgejo-url)
+        fi
+        echo url="$(cat forgejo-url)" >> $GITHUB_OUTPUT
+        echo host-port="$(cat forgejo-ip):3000" >> $GITHUB_OUTPUT
+        echo token=$(cat forgejo-token) >> $GITHUB_OUTPUT
+        echo runner-logs="$(pwd)/forgejo-runner.log" >> $GITHUB_OUTPUT
+        echo runner-file="$(pwd)/.runner" >> $GITHUB_OUTPUT
+      shell: bash

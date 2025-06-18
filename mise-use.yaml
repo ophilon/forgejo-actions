@@ -1,0 +1,14 @@
+name: runner workflow
+on: [push]
+
+jobs:
+  mise-env :
+    runs-on: fc42dev
+    defaults:
+      working-directory: ~dev/src
+    steps:
+      - name: "mise activate"
+        run: |
+          eval "$(/var/home/dev/.local/bin/mise activate bash)"
+          mise -v ls
+          go env 

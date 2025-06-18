@@ -1,0 +1,11 @@
+on: [push]
+jobs:
+  script:
+    runs-on: fc42dev
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - name: check env 
+        run: env|sort;docker images

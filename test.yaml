@@ -1,0 +1,21 @@
+name: runner workflow
+on: [push]
+
+jobs:
+  inside-runner :
+    runs-on: fc42dev
+    steps:
+      - name: runner env 
+        run: |
+          #!/bin/bash
+          set -e
+          env|sort
+          id
+          pwd;ls -la
+          uname -a
+          df -Th
+          docker images
+          podman images
+          echo "/usr/local/bin:"
+          ls -l /usr/local/bin
+
