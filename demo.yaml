@@ -23,4 +23,3 @@ jobs:
         run: |
           podman images
           docker images
-
