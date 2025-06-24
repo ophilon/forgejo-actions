@@ -1,26 +1,26 @@
 on: [push]
 jobs:
-  demo:
-    runs-on: podman
-    container:  
-      image: docker.io/library/alpine 
+  demoshell:
+    runs-on: fc42dev
     defaults:
       run:
         working-directory: .
     steps:
-      - name: "show env"
-        run:
+      - name: show env
+        run: |
+          id
+          pwd
+          alias
           env|sort
-      - name: "show home"
+      - name: show home
         run: |
           cd ~
           ls -la
-      - name: "podman info"
+      - name: podman info
         run: podman info
-      - name: "docker info"
+      - name: docker info
         run: docker info
-      - name: "podman, docker images"
+      - name: podman, docker images
         run: |
           podman images
           docker images
-

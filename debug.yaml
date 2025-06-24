@@ -1,6 +1,6 @@
 on: [push]
 jobs:
-  demo:
+  debug:
     runs-on: podman
     container:  
       image: docker.io/library/alpine 
@@ -13,14 +13,6 @@ jobs:
           env|sort
       - name: "show home"
         run: |
-          cd ~
+          pwd
+          help
           ls -la
-      - name: "podman info"
-        run: podman info
-      - name: "docker info"
-        run: docker info
-      - name: "podman, docker images"
-        run: |
-          podman images
-          docker images
-

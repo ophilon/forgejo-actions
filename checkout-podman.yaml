@@ -1,0 +1,20 @@
+on: [push]
+jobs:
+  podman-checkout:
+    runs-on: podman
+    container:  
+      image: docker.io/library/alpine 
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: "sync repo"
+        uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          sparse-checkout: .
+      - name: "show home"
+        run: |
+          pwd
+          find -type f
+          ps aux
+          df

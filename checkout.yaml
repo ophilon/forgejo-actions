@@ -1,0 +1,22 @@
+on: [push]
+jobs:
+  checkout:
+    runs-on: fc42dev
+      # container:  
+      # image: docker.io/library/alpine 
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: "mise activate"
+        run: |
+          eval "$(/var/home/dev/.local/bin/mise activate bash)"
+          mise -v ls
+      - name: "sync repo"
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .
+      - name: "show home"
+        run: |
+          pwd
+          find -type f
